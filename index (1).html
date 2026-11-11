@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Баурсак-завод</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #0e3238; color: #fff6e0;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation;
+}
+#app { height: 100vh; height: 100dvh; max-width: 720px; margin: 0 auto; position: relative;
+  background: radial-gradient(120% 80% at 50% 0%, #17525b 0%, #0e3238 70%); }
+.screen { height: 100%; display: flex; flex-direction: column; }
+.screen[hidden], [hidden] { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; }
+
+/* ----- меню ----- */
+#menu, #levels { align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.menuBox { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
+.tag { align-self: center; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700;
+  background: #ffc933; color: #2b2118; padding: 4px 10px; border-radius: 99px; }
+.tag.bad { background: #ff6a5a; }
+h1 { font-size: clamp(40px, 12vw, 58px); line-height: .95; margin: 10px 0 0; font-weight: 900; letter-spacing: -.02em; }
+h1 span { color: #ffc933; }
+h2 { font-size: 26px; margin: 6px 0; font-weight: 800; }
+.sub { margin: 0; opacity: .85; font-size: 16px; }
+#chain { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 14px 0;
+  background: #f4e8cf; border-radius: 16px; padding: 10px; border: 3px solid #2b2118; }
+#chain .arrow { color: #2b2118; font-weight: 900; font-size: 20px; }
+.btn { background: #f4e8cf; color: #2b2118; font-weight: 800; font-size: 17px; padding: 13px 16px; border-radius: 14px;
+  border: 3px solid #2b2118; box-shadow: 0 4px 0 #2b2118; width: 100%; transition: transform .06s, box-shadow .06s; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #2b2118; }
+.btn.primary { background: #ffc933; }
+.btn.big { font-size: 21px; padding: 16px; }
+.btn.ghost { background: transparent; color: #fff6e0; border-color: rgba(255,246,224,.5); box-shadow: none; }
+.btn.danger { background: #ff6a5a; }
+.row2 { display: flex; gap: 10px; }
+#menuStars { color: #ffc933; font-weight: 800; min-height: 22px; }
+#levelList { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
+.lvl { display: flex; align-items: center; gap: 12px; text-align: left; background: #f4e8cf; color: #2b2118;
+  border: 3px solid #2b2118; border-radius: 14px; padding: 10px 12px; box-shadow: 0 4px 0 #2b2118; }
+.lvl.locked { opacity: .55; box-shadow: none; }
+.lvl .num { width: 36px; height: 36px; border-radius: 10px; background: #12808f; color: #fff; font-weight: 900;
+  display: grid; place-items: center; flex: none; }
+.lvl .lname { flex: 1; font-weight: 800; font-size: 17px; }
+.lvl small { display: block; font-weight: 500; font-size: 12px; opacity: .7; }
+.stars i { font-style: normal; color: rgba(43,33,24,.22); font-size: 20px; }
+.stars i.on { color: #f0a000; }
+
+/* ----- игра ----- */
+#hud { padding: 8px 10px 6px; display: flex; flex-direction: column; gap: 6px; flex: none; }
+.hrow { display: flex; align-items: center; gap: 8px; }
+.ibtn { width: 42px; height: 38px; border-radius: 10px; background: rgba(255,246,224,.14); font-weight: 800; font-size: 14px; flex: none; }
+.ibtn:active { background: rgba(255,246,224,.3); }
+#lvlName { flex: 1; font-weight: 800; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat { background: rgba(0,0,0,.28); border-radius: 10px; padding: 7px 10px; font-weight: 800; font-size: 15px;
+  display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; flex: none; }
+#timer.low { background: #ff4a3a; animation: pulse .8s infinite; }
+.coin { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #ffc933;
+  border: 2px solid #a86f00; flex: none; vertical-align: -2px; }
+.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes pulse { 50% { opacity: .6; } }
+#goals { flex-wrap: wrap; gap: 6px; }
+.goal { display: flex; align-items: center; gap: 4px; background: rgba(255,246,224,.14); border-radius: 99px;
+  padding: 2px 10px 2px 4px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.goal.ok { background: #2fae57; }
+#meter { position: relative; flex: 1; height: 22px; border-radius: 99px; background: rgba(0,0,0,.32); overflow: hidden; }
+#meterFill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #1e9fc4, #3ecf6a); transition: width .3s; }
+#meterPeak { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; opacity: .8; }
+#meter .mark { position: absolute; top: 0; bottom: 0; border-left: 2px dashed rgba(255,246,224,.6); padding-left: 3px;
+  font-size: 10px; line-height: 22px; color: rgba(255,246,224,.6); letter-spacing: -1px; }
+#meter .mark.on { color: #ffc933; border-color: #ffc933; }
+#meterTxt { flex: none; min-width: 104px; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+#info { flex: none; min-height: 58px; margin: 0 10px 6px; padding: 8px 10px; border-radius: 12px; background: rgba(255,246,224,.12);
+  display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.3; }
+.itext { flex: 1; }
+.abtn { flex: none; border-radius: 10px; padding: 8px 10px; font-weight: 800; font-size: 14px; background: #f4e8cf; color: #2b2118;
+  border: 2px solid #2b2118; display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.abtn span { font-size: 12px; }
+.abtn.up { background: #3ecf6a; }
+.abtn.up.poor { background: #b9c2b4; }
+.abtn.del { background: #ffb3a8; }
+.abtn.fin { background: #ffc933; font-size: 16px; padding: 12px 14px; animation: pulse 1.2s infinite; }
+.maxed { font-weight: 800; color: #ffc933; }
+
+#boardwrap { flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 10px; }
+#board { border-radius: 14px; border: 3px solid #2b2118; background: #f4e8cf; touch-action: none; display: block; cursor: crosshair; }
+
+#tools { flex: none; display: flex; gap: 6px; padding: 8px 10px 10px; justify-content: center; }
+.tool { flex: 1; max-width: 96px; min-width: 0; background: #f4e8cf; color: #2b2118; border: 3px solid #2b2118; border-radius: 12px;
+  padding: 5px 2px 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; box-shadow: 0 3px 0 #2b2118; }
+.tool canvas { pointer-events: none; }
+.tool .tname { font-size: clamp(9px, 2.55vw, 12px); font-weight: 800; white-space: nowrap; letter-spacing: -.02em; }
+.tool .tcost { font-size: 11px; font-weight: 700; opacity: .75; }
+.tool .coin { width: 10px; height: 10px; border-width: 1.5px; margin-right: 2px; vertical-align: -1px; }
+.tool.active { background: #ffc933; transform: translateY(-4px); box-shadow: 0 7px 0 #2b2118; }
+.tool.poor .tcost { color: #c22c1e; opacity: 1; }
+
+/* ----- окна ----- */
+#modal { position: absolute; inset: 0; background: rgba(8,28,32,.72); display: grid; place-items: center; padding: 18px; z-index: 5; }
+#modalCard { width: 100%; max-width: 380px; max-height: 100%; overflow-y: auto; background: #f4e8cf; color: #2b2118; border: 3px solid #2b2118;
+  border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 10px; text-align: center; box-shadow: 0 8px 0 rgba(0,0,0,.35);
+  animation: pop .18s ease-out; }
+@keyframes pop { from { transform: scale(.92); opacity: 0; } }
+#modalCard p { margin: 0; line-height: 1.4; }
+#modalCard .muted { font-size: 14px; opacity: .78; }
+#modalCard .btn.ghost { color: #2b2118; border-color: rgba(43,33,24,.4); }
+.help { text-align: left; margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; line-height: 1.35; font-size: 15px; }
+.lamps { font-size: 13px; font-weight: 700; }
+.lamp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #2b2118; vertical-align: -1px; margin-left: 6px; }
+.lamp.ok { background: #3ecf6a; } .lamp.wait { background: #ffc933; } .lamp.block { background: #ff4a3a; }
+.orders { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.order { display: flex; align-items: center; gap: 4px; background: #fff; border: 2px solid #2b2118; border-radius: 99px; padding: 3px 12px 3px 5px; font-size: 15px; }
+.bigstars .stars i { font-size: 54px; line-height: 1; }
+.stats { width: 100%; border-collapse: collapse; font-size: 15px; }
+.stats td { padding: 5px 2px; border-bottom: 1px solid rgba(43,33,24,.15); text-align: left; }
+.stats td:last-child { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.toggle { display: flex; justify-content: space-between; background: #fff; border: 2px solid #2b2118; border-radius: 12px; padding: 12px 14px; font-weight: 800; color: #2b2118; }
+.toggle span { opacity: .5; } .toggle.on span { color: #1c8f43; opacity: 1; }
+.bulb { font-size: 14px; }
+@media (min-height: 760px) { #info { min-height: 62px; font-size: 15px; } }
+
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="menu" class="screen">
+    <div class="menuBox">
+      <div class="tag">Gambit Hackathon 2026 · AUTOMATE IT!</div>
+      <h1>Баурсак<span>-завод</span></h1>
+      <p class="sub">Построй завод, который печёт баурсаки сам.</p>
+      <div id="chain"></div>
+      <button class="btn primary big" id="bPlay" data-act="play">Играть</button>
+      <button class="btn" data-act="levels">Уровни</button>
+      <button class="btn" data-act="help">Как играть</button>
+      <div class="row2">
+        <button class="btn" data-act="settings">Настройки</button>
+        <button class="btn" data-act="credits">Авторы</button>
+      </div>
+      <div id="menuStars"></div>
+    </div>
+  </section>
+
+  <section id="levels" class="screen" hidden>
+    <div class="menuBox">
+      <h2>Уровни</h2>
+      <div id="levelList"></div>
+      <button class="btn ghost" data-act="back">Назад</button>
+    </div>
+  </section>
+
+  <section id="game" class="screen" hidden>
+    <header id="hud">
+      <div class="hrow">
+        <button class="ibtn" data-act="pause" aria-label="Пауза и меню">❚❚</button>
+        <div id="lvlName"></div>
+        <div class="stat" id="coins"><i class="coin"></i><b id="coinsN">0</b></div>
+        <div class="stat" id="timer">0:00</div>
+        <button class="ibtn" id="bSpeed" data-act="speed" aria-label="Скорость игры">×1</button>
+      </div>
+      <div class="hrow" id="goals"></div>
+      <div class="hrow">
+        <span id="meterTxt"></span>
+        <div id="meter">
+          <div id="meterFill"></div><div id="meterPeak"></div>
+          <div class="mark" id="m2">★★</div><div class="mark" id="m3">★★★</div>
+        </div>
+      </div>
+    </header>
+    <div id="info"></div>
+    <div id="boardwrap"><canvas id="board"></canvas></div>
+    <nav id="tools"></nav>
+  </section>
+
+  <div id="modal" hidden><div id="modalCard"></div></div>
+</div>
+<script>
+// ===== data.js =====
+// data.js — все игровые данные (баланс, рецепты, уровни). Логики здесь нет.
+'use strict';
+
+const GRID_W = 10;
+const GRID_H = 10;
+const BELT_TIME = 0.4;      // секунд на одну клетку ленты
+const BELT_COST = 2;
+const TP_WINDOW = 20;       // окно замера производительности, сек
+const BUF_CAP = 2;          // сколько единиц каждого сырья помещается в машину
+
+// Предметы
+const ITEMS = {
+  grain:   { name: 'Зерно' },
+  flour:   { name: 'Мука' },
+  water:   { name: 'Вода' },
+  dough:   { name: 'Тесто' },
+  baursak: { name: 'Баурсак' }
+};
+
+// Машины: рецепт, цена, время работы по уровням улучшения
+const MACHINES = {
+  mill:  { name: 'Мельница', cost: 30, times: [3.0, 2.0, 1.5], inp: { grain: 1 },           out: 'flour',
+           desc: 'Зерно → мука' },
+  mixer: { name: 'Замес',    cost: 40, times: [3.0, 2.0, 1.5], inp: { flour: 1, water: 1 }, out: 'dough',
+           desc: 'Мука + вода → тесто' },
+  kazan: { name: 'Казан',    cost: 50, times: [3.0, 2.0, 1.5], inp: { dough: 1 },           out: 'baursak',
+           desc: 'Тесто → баурсак' },
+  split: { name: 'Делитель', cost: 15, times: [0.1],           inp: null,                  out: null,
+           desc: 'Делит поток поровну между лентами' }
+};
+
+// Цена улучшения до уровня 2 и 3 — доля от цены машины
+const UPGRADE_FACTOR = [0.5, 1.0];
+
+// Уровни. Карта: . пусто, # камень, G зерно, W вода, S и T — склады.
+// stars: [производительность для 2 звёзд, для 3 звёзд] (штук в минуту на главном складе S)
+const LEVELS = [
+  {
+    name: 'Первая лента',
+    intro: 'Проведи ленту от зерна до склада. Дальше система работает сама.',
+    map: [
+      '..........',
+      '....#.....',
+      '.G........',
+      '..........',
+      '........S.',
+      '..#.......',
+      '..........',
+      '.G....#...',
+      '..........',
+      '..........'
+    ],
+    sources: { G: { item: 'grain', period: 1.5 } },
+    sinks:   { S: { want: 'grain', need: 25, reward: 1 } },
+    tools: ['belt', 'erase'],
+    coins: 20, limit: 180, stars: [36, 66],
+    hints: [
+      { text: 'Выбери «Лента» и проведи пальцем или мышью от зерна до склада.', until: 'delivered' },
+      { text: 'Работает без тебя! Накопи монеты и подключи второй источник — поток удвоится.', until: 'tp3' },
+      { text: 'Отличный поток. Дождись выполнения заказа и жми «Завершить».', until: 'never' }
+    ]
+  },
+  {
+    name: 'Мельница',
+    intro: 'Складу нужна мука. Поставь мельницу между зерном и складом.',
+    map: [
+      '..........',
+      '..#.......',
+      '..........',
+      '......#...',
+      '.G......S.',
+      '..........',
+      '...#......',
+      '..........',
+      '.......#..',
+      '..........'
+    ],
+    sources: { G: { item: 'grain', period: 1.5 } },
+    sinks:   { S: { want: 'flour', need: 25, reward: 3 } },
+    tools: ['belt', 'mill', 'split', 'erase'],
+    coins: 45, limit: 240, stars: [27, 36],
+    hints: [
+      { text: 'Поставь мельницу на пути и соедини лентами: зерно → мельница → склад.', until: 'delivered' },
+      { text: 'Мельница медленнее источника — это узкое место. Нажми на неё и улучши.', until: 'tp2' },
+      { text: 'Ещё быстрее: улучши до 3 уровня или поставь вторую мельницу через делитель.', until: 'tp3' },
+      { text: 'Максимум! Жми «Завершить», когда заказ выполнен.', until: 'never' }
+    ]
+  },
+  {
+    name: 'Тесто',
+    intro: 'Замесу нужны сразу мука и вода. Подведи к нему обе ленты.',
+    map: [
+      '..........',
+      '..........',
+      '.G...#....',
+      '..........',
+      '..........',
+      '...#....S.',
+      '..........',
+      '.W........',
+      '......#...',
+      '..........'
+    ],
+    sources: { G: { item: 'grain', period: 1.5 }, W: { item: 'water', period: 1.5 } },
+    sinks:   { S: { want: 'dough', need: 25, reward: 4 } },
+    tools: ['belt', 'mill', 'mixer', 'split', 'erase'],
+    coins: 100, limit: 270, stars: [27, 36],
+    hints: [
+      { text: 'Зерно → мельница → замес. Вода идёт в замес напрямую. Тесто — на склад.', until: 'delivered' },
+      { text: 'Смотри на лампочки: жёлтая — ждёт сырьё, красная — некуда выгружать. Улучшай узкое место.', until: 'tp3' },
+      { text: 'Линия на максимуме. Жми «Завершить», когда заказ выполнен.', until: 'never' }
+    ]
+  },
+  {
+    name: 'Баурсаки',
+    intro: 'Полная цепочка: зерно → мука → тесто → баурсак. Камни придётся обойти.',
+    map: [
+      '..........',
+      '.G..#.....',
+      '....#.....',
+      '..........',
+      '......##..',
+      '..........',
+      '...#......',
+      '...#....S.',
+      '.W........',
+      '..........'
+    ],
+    sources: { G: { item: 'grain', period: 1.5 }, W: { item: 'water', period: 1.5 } },
+    sinks:   { S: { want: 'baursak', need: 30, reward: 6 } },
+    tools: ['belt', 'mill', 'mixer', 'kazan', 'split', 'erase'],
+    coins: 170, limit: 300, stars: [27, 36],
+    hints: [
+      { text: 'Построй цепочку из трёх машин: мельница → замес (+вода) → казан → склад.', until: 'delivered' },
+      { text: 'Скорость линии равна скорости самой медленной машины. Найди её и улучши.', until: 'tp3' },
+      { text: 'Завод работает на полную. Жми «Завершить», когда заказ выполнен.', until: 'never' }
+    ]
+  },
+  {
+    name: 'Большой той',
+    intro: 'Два заказа сразу: баурсаки на той и мука в магазин. Зерна много — раздели поток.',
+    map: [
+      '..........',
+      '.G......T.',
+      '..........',
+      '....#.....',
+      '....#.....',
+      '..........',
+      '.......#..',
+      '........S.',
+      '.W........',
+      '..........'
+    ],
+    sources: { G: { item: 'grain', period: 0.75 }, W: { item: 'water', period: 1.5 } },
+    sinks:   { S: { want: 'baursak', need: 30, reward: 6 }, T: { want: 'flour', need: 20, reward: 3 } },
+    tools: ['belt', 'mill', 'mixer', 'kazan', 'split', 'erase'],
+    coins: 220, limit: 300, stars: [27, 36],
+    hints: [
+      { text: 'Источник зерна быстрый: раздели поток на две мельницы — одна для магазина, другая для баурсаков.', until: 'delivered' },
+      { text: 'Оба заказа должны быть выполнены. Звёзды дают за поток баурсаков.', until: 'tp3' },
+      { text: 'Мастер автоматизации! Жми «Завершить», когда оба заказа готовы.', until: 'never' }
+    ]
+  }
+];
+
+// Авторы — показываются в игре на экране «Авторы». Впишите свою команду.
+const CREDITS = {
+  team: 'впишите название команды',
+  members: ['имена участников'],
+  ai: 'Claude (Anthropic) — помощь с кодом и балансом'
+};
+
+// ===== sim.js =====
+// sim.js — симуляция завода. Чистая логика без DOM: её можно гонять в Node (см. test/).
+// Шаг фиксированный, поэтому поведение детерминировано.
+'use strict';
+
+const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]]; // 0 вправо, 1 вниз, 2 влево, 3 вверх
+const STEP = 1 / 30;
+
+const Sim = {
+  create(index) {
+    const L = LEVELS[index];
+    const g = {
+      index, level: L, w: GRID_W, h: GRID_H,
+      cells: new Array(GRID_W * GRID_H).fill(null),
+      sinks: [], coins: L.coins, time: 0, tick: 0,
+      done: false,        // заказ выполнен
+      over: false,        // уровень закончен (победа или поражение)
+      won: false,
+      doneAt: 0,
+      peak: 0,            // лучшая производительность, шт/мин
+      events: [],         // события для звука и эффектов, UI их забирает
+      built: { belt: 0, mach: 0, upgrades: 0 }
+    };
+    for (let y = 0; y < g.h; y++) {
+      for (let x = 0; x < g.w; x++) {
+        const ch = L.map[y][x];
+        let c = null;
+        if (ch === '#') c = { k: 'rock' };
+        else if (L.sources[ch]) {
+          const s = L.sources[ch];
+          c = { k: 'src', item: s.item, period: s.period, t: 0, ready: false, rr: 0 };
+        } else if (L.sinks[ch]) {
+          const s = L.sinks[ch];
+          c = { k: 'sink', want: s.want, need: s.need, reward: s.reward, got: 0, bad: 0, times: [], x, y };
+          g.sinks.push(c);
+        }
+        g.cells[y * g.w + x] = c;
+      }
+    }
+    // главный склад — S, по нему считаем звёзды
+    g.sinks.sort((a, b) => (L.map[a.y][a.x] === 'S' ? -1 : 1) - (L.map[b.y][b.x] === 'S' ? -1 : 1));
+    return g;
+  },
+
+  inside(g, x, y) { return x >= 0 && y >= 0 && x < g.w && y < g.h; },
+  at(g, x, y) { return Sim.inside(g, x, y) ? g.cells[y * g.w + x] : undefined; },
+
+  // ---------- строительство ----------
+  placeBelt(g, x, y, d) {
+    if (!Sim.inside(g, x, y)) return { ok: false, why: 'out' };
+    const c = Sim.at(g, x, y);
+    if (c && c.k === 'belt') { c.d = d; return { ok: true, changed: false }; }
+    if (c) return { ok: false, why: 'busy' };
+    if (g.coins < BELT_COST) return { ok: false, why: 'coins' };
+    g.coins -= BELT_COST;
+    g.cells[y * g.w + x] = { k: 'belt', d, item: null };
+    g.built.belt++;
+    return { ok: true, changed: true };
+  },
+
+  placeMachine(g, x, y, type) {
+    if (!Sim.inside(g, x, y)) return { ok: false, why: 'out' };
+    if (Sim.at(g, x, y)) return { ok: false, why: 'busy' };
+    const M = MACHINES[type];
+    if (g.coins < M.cost) return { ok: false, why: 'coins' };
+    g.coins -= M.cost;
+    g.cells[y * g.w + x] = { k: 'mach', type, lvl: 1, buf: {}, t: 0, working: false, out: null, rr: 0, state: 'wait', spent: M.cost };
+    g.built.mach++;
+    return { ok: true };
+  },
+
+  upgradeCost(c) {
+    if (!c || c.k !== 'mach') return null;
+    const M = MACHINES[c.type];
+    if (c.lvl >= M.times.length) return null;
+    return Math.round(M.cost * UPGRADE_FACTOR[c.lvl - 1]);
+  },
+
+  upgrade(g, x, y) {
+    const c = Sim.at(g, x, y);
+    const cost = Sim.upgradeCost(c);
+    if (cost === null) return { ok: false, why: 'max' };
+    if (g.coins < cost) return { ok: false, why: 'coins' };
+    g.coins -= cost; c.spent += cost; c.lvl++;
+    g.built.upgrades++;
+    return { ok: true };
+  },
+
+  // Снос возвращает все потраченные монеты: экспериментировать не страшно.
+  erase(g, x, y) {
+    const c = Sim.at(g, x, y);
+    if (!c || (c.k !== 'belt' && c.k !== 'mach')) return { ok: false };
+    g.coins += c.k === 'belt' ? BELT_COST : c.spent;
+    g.cells[y * g.w + x] = null;
+    return { ok: true };
+  },
+
+  duration(c) { return MACHINES[c.type].times[c.lvl - 1]; },
+
+  // ---------- логика машин ----------
+  accepts(c, type) {
+    const M = MACHINES[c.type];
+    if (c.type === 'split') return !c.out;
+    if (!M.inp[type]) return false;
+    return (c.buf[type] || 0) < BUF_CAP;
+  },
+  everAccepts(c, type) { return c.type === 'split' || !!MACHINES[c.type].inp[type]; },
+
+  // Выгрузка на любую соседнюю ленту, которая не направлена обратно в клетку.
+  // По кругу — так поток делится поровну.
+  pushOut(g, x, y, c, type) {
+    for (let i = 0; i < 4; i++) {
+      const d = (c.rr + i) % 4;
+      const n = Sim.at(g, x + DIRS[d][0], y + DIRS[d][1]);
+      if (n && n.k === 'belt' && n.d !== (d + 2) % 4 && !n.item) {
+        n.item = { type, p: 0, fx: x, fy: y, tick: g.tick, stuck: false };
+        c.rr = (d + 1) % 4;
+        return true;
+      }
+    }
+    return false;
+  },
+
+  hasInputs(c) {
+    const inp = MACHINES[c.type].inp;
+    for (const k in inp) if ((c.buf[k] || 0) < inp[k]) return false;
+    return true;
+  },
+
+  deliver(g, s, type) {
+    if (type === s.want) {
+      s.got++; g.coins += s.reward; s.times.push(g.time);
+      g.events.push({ e: 'deliver', x: s.x, y: s.y, reward: s.reward });
+    } else {
+      s.bad++;
+      g.events.push({ e: 'bad', x: s.x, y: s.y });
+    }
+  },
+
+  // ---------- один шаг симуляции ----------
+  step(g) {
+    if (g.over) return;
+    const dt = STEP;
+    g.time += dt; g.tick++;
+    for (let y = 0; y < g.h; y++) {
+      for (let x = 0; x < g.w; x++) {
+        const c = g.cells[y * g.w + x];
+        if (!c) continue;
+        if (c.k === 'src') {
+          if (!c.ready) { c.t += dt; if (c.t >= c.period) { c.ready = true; c.t = 0; } }
+          if (c.ready && Sim.pushOut(g, x, y, c, c.item)) c.ready = false;
+        } else if (c.k === 'mach') {
+          Sim.stepMachine(g, x, y, c, dt);
+        } else if (c.k === 'belt' && c.item && c.item.tick !== g.tick) {
+          Sim.stepBelt(g, x, y, c, dt);
+        }
+      }
+    }
+    // производительность главного склада
+    const tp = Sim.throughput(g);
+    if (tp > g.peak) g.peak = tp;
+    // заказ
+    if (!g.done && g.sinks.every(s => s.got >= s.need)) {
+      g.done = true; g.doneAt = g.time;
+      g.events.push({ e: 'done' });
+    }
+    if (g.time >= g.level.limit) Sim.finish(g);
+  },
+
+  stepMachine(g, x, y, c, dt) {
+    if (c.type === 'split') {
+      if (c.out && Sim.pushOut(g, x, y, c, c.out)) c.out = null;
+      c.state = c.out ? 'block' : 'wait';
+      return;
+    }
+    if (c.out) {
+      if (Sim.pushOut(g, x, y, c, c.out)) c.out = null;
+      else { c.state = 'block'; return; }
+    }
+    if (c.working) {
+      c.t += dt; c.state = 'work';
+      if (c.t >= Sim.duration(c)) {
+        c.working = false; c.t = 0;
+        c.out = MACHINES[c.type].out;
+        if (Sim.pushOut(g, x, y, c, c.out)) c.out = null;
+      }
+      return;
+    }
+    if (Sim.hasInputs(c)) {
+      const inp = MACHINES[c.type].inp;
+      for (const k in inp) c.buf[k] -= inp[k];
+      c.working = true; c.t = 0; c.state = 'work';
+    } else c.state = 'wait';
+  },
+
+  stepBelt(g, x, y, c, dt) {
+    const it = c.item;
+    if (it.p < 1) { it.p += dt / BELT_TIME; if (it.p < 1) return; it.p = 1; }
+    const nx = x + DIRS[c.d][0], ny = y + DIRS[c.d][1];
+    const n = Sim.at(g, nx, ny);
+    it.stuck = false;
+    if (!n) return;
+    if (n.k === 'belt') {
+      if (!n.item && n.d !== (c.d + 2) % 4) {
+        n.item = { type: it.type, p: 0, fx: x, fy: y, tick: g.tick, stuck: false };
+        c.item = null;
+      }
+    } else if (n.k === 'mach') {
+      if (Sim.accepts(n, it.type)) {
+        if (n.type === 'split') n.out = it.type;
+        else n.buf[it.type] = (n.buf[it.type] || 0) + 1;
+        c.item = null;
+      } else if (!Sim.everAccepts(n, it.type)) it.stuck = true;
+    } else if (n.k === 'sink') {
+      Sim.deliver(g, n, it.type);
+      c.item = null;
+    }
+  },
+
+  // штук в минуту на главном складе за последние TP_WINDOW секунд
+  throughput(g) {
+    const s = g.sinks[0], from = g.time - TP_WINDOW;
+    while (s.times.length && s.times[0] < from) s.times.shift();
+    return Math.round(s.times.length * 60 / TP_WINDOW);
+  },
+
+  stars(g) {
+    if (!g.done) return 0;
+    const st = g.level.stars;
+    return 1 + (g.peak >= st[0] ? 1 : 0) + (g.peak >= st[1] ? 1 : 0);
+  },
+
+  score(g) {
+    if (!g.done) return 0;
+    return Sim.stars(g) * 1000 + g.peak * 10 + Math.round(g.level.limit - g.doneAt) + g.coins;
+  },
+
+  finish(g) {
+    if (g.over) return;
+    g.over = true; g.won = g.done;
+    g.events.push({ e: g.won ? 'win' : 'lose' });
+  }
+};
+
+// ===== audio.js =====
+// audio.js — весь звук синтезируется через WebAudio, внешних файлов нет.
+'use strict';
+
+const Sound = {
+  ctx: null, on: true, musicOn: true, timer: null, stepN: 0, lastBlip: 0,
+
+  // Браузер разрешает звук только после действия пользователя — вызываем из обработчика клика.
+  unlock() {
+    try {
+      if (!Sound.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        Sound.ctx = new AC();
+      }
+      if (Sound.ctx.state === 'suspended') Sound.ctx.resume();
+      Sound.syncMusic();
+    } catch (e) { Sound.ctx = null; }
+  },
+
+  tone(freq, dur, type, vol, delay) {
+    const ctx = Sound.ctx;
+    if (!ctx || ctx.state !== 'running') return;
+    try {
+      const t = ctx.currentTime + (delay || 0);
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.1, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + dur + 0.03);
+    } catch (e) { /* звук не критичен */ }
+  },
+
+  play(name) {
+    if (!Sound.on) return;
+    const T = Sound.tone;
+    switch (name) {
+      case 'place':   T(520, 0.07, 'triangle', 0.08); break;
+      case 'machine': T(300, 0.09, 'square', 0.05); T(450, 0.12, 'triangle', 0.08, 0.06); break;
+      case 'erase':   T(240, 0.1, 'triangle', 0.07); break;
+      case 'rotate':  T(660, 0.05, 'triangle', 0.06); break;
+      case 'error':   T(160, 0.14, 'sawtooth', 0.05); break;
+      case 'click':   T(700, 0.04, 'triangle', 0.05); break;
+      case 'upgrade': T(523, 0.1, 'triangle', 0.09); T(659, 0.1, 'triangle', 0.09, 0.08); T(784, 0.16, 'triangle', 0.09, 0.16); break;
+      case 'deliver': {
+        const now = performance.now();
+        if (now - Sound.lastBlip < 90) return;   // не частим при большом потоке
+        Sound.lastBlip = now;
+        T(880, 0.09, 'sine', 0.06); break;
+      }
+      case 'bad':     T(200, 0.12, 'square', 0.04); break;
+      case 'done':    [523, 659, 784, 1047].forEach((f, i) => T(f, 0.2, 'triangle', 0.1, i * 0.1)); break;
+      case 'win':     [523, 659, 784, 659, 784, 1047].forEach((f, i) => T(f, 0.24, 'triangle', 0.1, i * 0.12)); break;
+      case 'lose':    [392, 330, 262].forEach((f, i) => T(f, 0.3, 'triangle', 0.09, i * 0.18)); break;
+      case 'star':    T(1175, 0.18, 'sine', 0.09); break;
+    }
+  },
+
+  // Тихая фоновая мелодия: пентатоника, генерируется на лету.
+  syncMusic() {
+    const want = Sound.musicOn && Sound.ctx;
+    if (want && !Sound.timer) Sound.timer = setInterval(Sound.musicStep, 300);
+    if (!want && Sound.timer) { clearInterval(Sound.timer); Sound.timer = null; }
+  },
+  musicStep() {
+    if (document.hidden) return;
+    const scale = [262, 294, 330, 392, 440, 523, 587, 659];
+    const pattern = [0, 2, 4, 2, 3, 5, 4, 2, 0, 2, 4, 5, 7, 5, 4, 2];
+    const n = Sound.stepN++ % 32;
+    if (n % 2 === 0) Sound.tone(scale[pattern[(n / 2) % 16]], 0.5, 'sine', 0.022);
+    if (n % 8 === 0) Sound.tone([131, 98, 110, 98][(n / 8) % 4], 1.6, 'triangle', 0.03);
+  }
+};
+
+// ===== render.js =====
+// render.js — отрисовка на Canvas 2D. Вся графика рисуется кодом, файлов-спрайтов нет.
+'use strict';
+
+const COL = {
+  boardA: '#f4e8cf', boardB: '#eedfc0', ink: '#2b2118',
+  belt: '#56616d', beltEdge: '#3f4852', chev: '#9aa6b3',
+  mill: '#e08a2e', mixer: '#1e9fc4', kazan: '#4a3a30', split: '#8a63c2',
+  src: '#b9874c', sink: '#12808f', rock: '#9c9482',
+  ok: '#3ecf6a', wait: '#ffc933', block: '#ff4a3a'
+};
+
+const Render = {
+  rr(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  },
+
+  // ---------- предметы ----------
+  item(ctx, type, x, y, r) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.lineWidth = Math.max(1, r * 0.16); ctx.strokeStyle = COL.ink;
+    if (type === 'grain') {
+      ctx.rotate(-0.6);
+      ctx.fillStyle = '#f2b632';
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 0.62, r, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, -r * 0.6); ctx.lineTo(0, r * 0.6); ctx.stroke();
+    } else if (type === 'flour') {
+      ctx.fillStyle = '#ffffff';
+      Render.rr(ctx, -r * 0.8, -r * 0.75, r * 1.6, r * 1.7, r * 0.35); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#c9b48f';
+      ctx.fillRect(-r * 0.8, -r * 0.15, r * 1.6, r * 0.42);
+      ctx.beginPath(); ctx.moveTo(-r * 0.45, -r * 0.75); ctx.lineTo(0, -r * 1.1); ctx.lineTo(r * 0.45, -r * 0.75); ctx.closePath();
+      ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.stroke();
+    } else if (type === 'water') {
+      ctx.fillStyle = '#37b6ee';
+      ctx.beginPath(); ctx.moveTo(0, -r * 1.1);
+      ctx.bezierCurveTo(r * 1.2, r * 0.2, r * 0.8, r, 0, r);
+      ctx.bezierCurveTo(-r * 0.8, r, -r * 1.2, r * 0.2, 0, -r * 1.1);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.beginPath(); ctx.ellipse(-r * 0.25, r * 0.3, r * 0.14, r * 0.26, 0.5, 0, 7); ctx.fill();
+    } else if (type === 'dough') {
+      ctx.fillStyle = '#f3dcae';
+      ctx.beginPath(); ctx.ellipse(0, r * 0.1, r, r * 0.8, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.beginPath(); ctx.ellipse(-r * 0.3, -r * 0.2, r * 0.3, r * 0.16, -0.4, 0, 7); ctx.fill();
+    } else if (type === 'baursak') {
+      ctx.fillStyle = '#d98a2b';
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f6c463';
+      ctx.beginPath(); ctx.ellipse(-r * 0.25, -r * 0.3, r * 0.42, r * 0.26, -0.5, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  },
+
+  // ---------- значки машин ----------
+  machIcon(ctx, type, s, t, active) {
+    ctx.save();
+    ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff'; ctx.lineWidth = s * 0.07; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (type === 'mill') {
+      ctx.rotate(active ? t * 3 : 0.4);
+      for (let i = 0; i < 4; i++) {
+        ctx.rotate(Math.PI / 2);
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * 0.3, -s * 0.04); ctx.lineTo(s * 0.3, s * 0.12); ctx.closePath(); ctx.fill();
+      }
+      ctx.beginPath(); ctx.arc(0, 0, s * 0.06, 0, 7); ctx.fill();
+    } else if (type === 'mixer') {
+      ctx.beginPath(); ctx.arc(0, -s * 0.02, s * 0.27, 0.1, Math.PI - 0.1); ctx.closePath(); ctx.fill();
+      const a = active ? Math.sin(t * 9) * 0.35 : 0.2;
+      ctx.beginPath(); ctx.moveTo(Math.sin(a) * s * 0.1, -s * 0.02); ctx.lineTo(Math.sin(a) * s * 0.3 + s * 0.08, -s * 0.3); ctx.stroke();
+    } else if (type === 'kazan') {
+      ctx.fillStyle = '#ffb02e';
+      const f = active ? 1 + Math.sin(t * 12) * 0.15 : 0.5;
+      ctx.beginPath(); ctx.moveTo(-s * 0.16, s * 0.3); ctx.quadraticCurveTo(0, s * 0.3 - s * 0.22 * f, s * 0.16, s * 0.3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, -s * 0.08, s * 0.28, 0, Math.PI); ctx.closePath(); ctx.fill();
+      ctx.fillRect(-s * 0.33, -s * 0.13, s * 0.66, s * 0.06);
+      if (active) {
+        ctx.fillStyle = '#f6c463';
+        for (let i = 0; i < 3; i++) {
+          const ph = (t * 1.5 + i / 3) % 1;
+          ctx.globalAlpha = 1 - ph;
+          ctx.beginPath(); ctx.arc((i - 1) * s * 0.14, -s * 0.16 - ph * s * 0.16, s * 0.045, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+    } else if (type === 'split') {
+      ctx.beginPath(); ctx.moveTo(-s * 0.28, 0); ctx.lineTo(-s * 0.04, 0);
+      ctx.lineTo(s * 0.2, -s * 0.22); ctx.moveTo(-s * 0.04, 0); ctx.lineTo(s * 0.2, s * 0.22); ctx.stroke();
+      ctx.beginPath(); ctx.arc(s * 0.22, -s * 0.22, s * 0.06, 0, 7); ctx.arc(s * 0.22, s * 0.22, s * 0.06, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  },
+
+  machBody(ctx, type, cx, cy, cs) {
+    const m = cs * 0.07, s = cs - m * 2;
+    ctx.fillStyle = 'rgba(43,33,24,.25)';
+    Render.rr(ctx, cx - s / 2, cy - s / 2 + cs * 0.05, s, s, cs * 0.18); ctx.fill();
+    ctx.fillStyle = COL[type];
+    Render.rr(ctx, cx - s / 2, cy - s / 2, s, s, cs * 0.18); ctx.fill();
+    ctx.strokeStyle = COL.ink; ctx.lineWidth = Math.max(1.5, cs * 0.035); ctx.stroke();
+  },
+
+  // ---------- ленты ----------
+  feeds(g, x, y, c, dd) {   // подаёт ли сосед со стороны dd что-то на эту ленту
+    const n = Sim.at(g, x + DIRS[dd][0], y + DIRS[dd][1]);
+    if (!n) return false;
+    if (n.k === 'belt') return n.d === (dd + 2) % 4;
+    if (n.k === 'src' || n.k === 'mach') return c.d !== dd;
+    return false;
+  },
+
+  belt(ctx, g, x, y, c, cs) {
+    const cx = (x + 0.5) * cs, cy = (y + 0.5) * cs, w = cs * 0.6, h = cs / 2;
+    const stub = (dd, col, ww) => {
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(dd * Math.PI / 2);
+      ctx.fillStyle = col; ctx.fillRect(0, -ww / 2, h + 0.5, ww); ctx.restore();
+    };
+    const back = (c.d + 2) % 4;
+    const ins = [];
+    for (let dd = 0; dd < 4; dd++) if (dd !== c.d && Render.feeds(g, x, y, c, dd)) ins.push(dd);
+    const straight = ins.length === 0 || ins.includes(back);
+    const arms = [c.d].concat(ins.length ? ins : [back]);
+    for (const pass of [0, 1]) {
+      const col = pass ? COL.belt : COL.beltEdge, ww = pass ? w * 0.8 : w;
+      arms.forEach(dd => stub(dd, col, ww));
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, ww / 2, 0, 7); ctx.fill();
+    }
+    // бегущие шевроны показывают направление
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(c.d * Math.PI / 2);
+    ctx.beginPath(); ctx.rect(straight ? -h : -w * 0.2, -w / 2, straight ? cs : h + w * 0.2, w); ctx.clip();
+    ctx.strokeStyle = COL.chev; ctx.lineWidth = cs * 0.06; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const gap = cs / 2, off = ((g.time / BELT_TIME) * cs) % gap, a = w * 0.2;
+    for (let px = -cs + off; px < cs; px += gap) {
+      ctx.beginPath(); ctx.moveTo(px - a * 0.7, -a); ctx.lineTo(px, 0); ctx.lineTo(px - a * 0.7, a); ctx.stroke();
+    }
+    ctx.restore();
+  },
+
+  // ---------- вся доска ----------
+  draw(ctx, g, v) {
+    const cs = v.cs, W = g.w * cs, H = g.h * cs;
+    ctx.clearRect(0, 0, W, H);
+    for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+      ctx.fillStyle = (x + y) % 2 ? COL.boardA : COL.boardB;
+      ctx.fillRect(x * cs, y * cs, cs, cs);
+    }
+    // ленты
+    for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+      const c = g.cells[y * g.w + x];
+      if (c && c.k === 'belt') Render.belt(ctx, g, x, y, c, cs);
+    }
+    // постройки
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+      const c = g.cells[y * g.w + x];
+      if (!c || c.k === 'belt') continue;
+      const cx = (x + 0.5) * cs, cy = (y + 0.5) * cs;
+      if (c.k === 'rock') Render.rock(ctx, cx, cy, cs, x * 7 + y * 13);
+      else if (c.k === 'src') Render.source(ctx, c, cx, cy, cs);
+      else if (c.k === 'sink') Render.sink(ctx, c, cx, cy, cs, g.time);
+      else if (c.k === 'mach') Render.machine(ctx, c, cx, cy, cs, g.time);
+    }
+    // предметы на лентах
+    for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+      const c = g.cells[y * g.w + x];
+      if (!c || c.k !== 'belt' || !c.item) continue;
+      const it = c.item, p = Math.min(1, it.p);
+      const px = (it.fx + (x - it.fx) * p + 0.5) * cs, py = (it.fy + (y - it.fy) * p + 0.5) * cs;
+      Render.item(ctx, it.type, px, py, cs * 0.17);
+      if (it.stuck) {
+        ctx.strokeStyle = COL.block; ctx.lineWidth = cs * 0.06;
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(v.now * 8);
+        ctx.beginPath(); ctx.arc(px, py, cs * 0.3, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+    }
+    // выделение и курсор
+    if (v.sel) {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = cs * 0.07; ctx.setLineDash([cs * 0.16, cs * 0.1]); ctx.lineDashOffset = -v.now * cs * 0.5;
+      Render.rr(ctx, v.sel.x * cs + 2, v.sel.y * cs + 2, cs - 4, cs - 4, cs * 0.2); ctx.stroke();
+      ctx.strokeStyle = COL.ink; ctx.lineWidth = cs * 0.025; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (v.hover) {
+      ctx.strokeStyle = v.tool === 'erase' ? 'rgba(226,60,45,.8)' : 'rgba(43,33,24,.45)'; ctx.lineWidth = Math.max(2, cs * 0.05);
+      Render.rr(ctx, v.hover.x * cs + 2, v.hover.y * cs + 2, cs - 4, cs - 4, cs * 0.16); ctx.stroke();
+    }
+    // всплывающие монетки
+    ctx.font = '800 ' + Math.round(cs * 0.36) + 'px system-ui, sans-serif';
+    for (const f of v.floats) {
+      const a = 1 - f.age / 0.9;
+      ctx.globalAlpha = Math.max(0, a);
+      const fx = (f.x + 0.5) * cs, fy = (f.y + 0.1) * cs - f.age * cs * 0.7;
+      ctx.lineWidth = cs * 0.08; ctx.strokeStyle = COL.ink; ctx.strokeText(f.text, fx, fy);
+      ctx.fillStyle = f.color; ctx.fillText(f.text, fx, fy);
+    }
+    ctx.globalAlpha = 1;
+  },
+
+  rock(ctx, cx, cy, cs, seed) {
+    ctx.fillStyle = 'rgba(43,33,24,.18)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + cs * 0.24, cs * 0.36, cs * 0.12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = COL.rock; ctx.strokeStyle = COL.ink; ctx.lineWidth = Math.max(1.5, cs * 0.035); ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < 7; i++) {
+      const a = i / 7 * Math.PI * 2, r = cs * (0.28 + 0.1 * Math.abs(Math.sin(seed + i * 2.3)));
+      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.82);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    ctx.beginPath(); ctx.ellipse(cx - cs * 0.08, cy - cs * 0.1, cs * 0.1, cs * 0.05, -0.5, 0, 7); ctx.fill();
+  },
+
+  source(ctx, c, cx, cy, cs) {
+    Render.machBody(ctx, 'src', cx, cy, cs);
+    ctx.fillStyle = '#fff6e0';
+    ctx.beginPath(); ctx.arc(cx, cy, cs * 0.3, 0, 7); ctx.fill();
+    // кольцо показывает, когда появится следующий предмет
+    ctx.strokeStyle = COL.ink; ctx.lineWidth = cs * 0.05;
+    ctx.beginPath(); ctx.arc(cx, cy, cs * 0.3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (c.ready ? 1 : c.t / c.period)); ctx.stroke();
+    Render.item(ctx, c.item, cx, cy, cs * 0.17);
+  },
+
+  sink(ctx, c, cx, cy, cs, t) {
+    const full = c.got >= c.need;
+    Render.machBody(ctx, 'sink', cx, cy, cs);
+    if (full) { ctx.strokeStyle = COL.ok; ctx.lineWidth = cs * 0.07; Render.rr(ctx, cx - cs * 0.43, cy - cs * 0.43, cs * 0.86, cs * 0.86, cs * 0.18); ctx.stroke(); }
+    ctx.fillStyle = '#fff6e0';
+    Render.rr(ctx, cx - cs * 0.3, cy - cs * 0.36, cs * 0.6, cs * 0.4, cs * 0.1); ctx.fill();
+    Render.item(ctx, c.want, cx, cy - cs * 0.16, cs * 0.13);
+    ctx.fillStyle = '#fff'; ctx.font = '800 ' + Math.round(cs * 0.24) + 'px system-ui, sans-serif';
+    ctx.fillText(full ? '✓ ' + c.got : c.got + '/' + c.need, cx, cy + cs * 0.24);
+  },
+
+  machine(ctx, c, cx, cy, cs, t) {
+    Render.machBody(ctx, c.type, cx, cy, cs);
+    ctx.save(); ctx.translate(cx, cy);
+    Render.machIcon(ctx, c.type, cs, t, c.state === 'work');
+    ctx.restore();
+    if (c.type === 'split') return;
+    // лампочка состояния
+    ctx.fillStyle = COL[c.state === 'work' ? 'ok' : c.state];
+    ctx.strokeStyle = COL.ink; ctx.lineWidth = Math.max(1, cs * 0.03);
+    ctx.beginPath(); ctx.arc(cx + cs * 0.28, cy - cs * 0.28, cs * 0.085, 0, 7); ctx.fill(); ctx.stroke();
+    // уровень
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < c.lvl; i++) { ctx.beginPath(); ctx.arc(cx - cs * 0.3 + i * cs * 0.12, cy - cs * 0.3, cs * 0.04, 0, 7); ctx.fill(); }
+    // прогресс
+    const bw = cs * 0.62, bx = cx - bw / 2, by = cy + cs * 0.31;
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; Render.rr(ctx, bx, by, bw, cs * 0.07, cs * 0.035); ctx.fill();
+    if (c.working) { ctx.fillStyle = '#fff'; Render.rr(ctx, bx, by, Math.max(cs * 0.07, bw * c.t / Sim.duration(c)), cs * 0.07, cs * 0.035); ctx.fill(); }
+  },
+
+  // ---------- значки для кнопок и HUD ----------
+  makeCanvas(size) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = Math.round(size * dpr);
+    cv.style.width = cv.style.height = size + 'px';
+    const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    return { cv, ctx };
+  },
+  itemCanvas(type, size) {
+    const { cv, ctx } = Render.makeCanvas(size);
+    Render.item(ctx, type, size / 2, size / 2 + size * 0.03, size * 0.36);
+    return cv;
+  },
+  toolCanvas(kind, size) {
+    const { cv, ctx } = Render.makeCanvas(size);
+    const c = size / 2;
+    if (kind === 'belt') {
+      ctx.fillStyle = COL.beltEdge; Render.rr(ctx, size * 0.06, size * 0.24, size * 0.88, size * 0.52, size * 0.12); ctx.fill();
+      ctx.fillStyle = COL.belt; Render.rr(ctx, size * 0.06, size * 0.29, size * 0.88, size * 0.42, size * 0.1); ctx.fill();
+      ctx.strokeStyle = '#dfe6ee'; ctx.lineWidth = size * 0.07; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const px of [0.36, 0.66]) { ctx.beginPath(); ctx.moveTo(size * (px - 0.1), size * 0.38); ctx.lineTo(size * px, c); ctx.lineTo(size * (px - 0.1), size * 0.62); ctx.stroke(); }
+    } else if (kind === 'erase') {
+      ctx.strokeStyle = '#e23c2d'; ctx.lineWidth = size * 0.13; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(size * 0.26, size * 0.26); ctx.lineTo(size * 0.74, size * 0.74);
+      ctx.moveTo(size * 0.74, size * 0.26); ctx.lineTo(size * 0.26, size * 0.74); ctx.stroke();
+    } else {
+      Render.machBody(ctx, kind, c, c, size);
+      ctx.translate(c, c); Render.machIcon(ctx, kind, size, 0, false);
+    }
+    return cv;
+  }
+};
+
+// ===== ui.js =====
+// ui.js — экраны, управление, игровой цикл и сохранение прогресса.
+'use strict';
+
+const $ = id => document.getElementById(id);
+
+// ---------- сохранение (только прогресс и настройки, никаких личных данных) ----------
+const Store = {
+  key: 'baursak-zavod-v1',
+  data: { stars: [], best: [], sound: true, music: true, seenHelp: false },
+  load() {
+    try { const raw = localStorage.getItem(Store.key); if (raw) Object.assign(Store.data, JSON.parse(raw)); } catch (e) { /* играем без сохранения */ }
+    Sound.on = Store.data.sound; Sound.musicOn = Store.data.music;
+  },
+  save() { try { localStorage.setItem(Store.key, JSON.stringify(Store.data)); } catch (e) { /* не критично */ } }
+};
+
+const UI = {
+  g: null, ctx: null, speed: 1, acc: 0, last: 0, screen: 'menu', modalOpen: false,
+  view: { cs: 40, now: 0, hover: null, sel: null, tool: 'belt', floats: [] },
+  drag: null, lastDir: 0, hintIdx: 0, toast: null, infoKey: '', cache: {},
+
+  // ---------- экраны ----------
+  show(name) {
+    UI.screen = name;
+    for (const s of ['menu', 'levels', 'game']) $(s).hidden = s !== name;
+    if (name === 'levels') UI.buildLevels();
+    if (name === 'menu') UI.buildMenu();
+    if (name === 'game') UI.resize();
+  },
+
+  modal(html, onAct) {
+    UI.modalOpen = true;
+    $('modalCard').innerHTML = html;
+    $('modal').hidden = false;
+    UI.onModalAct = onAct;
+  },
+  closeModal() { UI.modalOpen = false; $('modal').hidden = true; UI.last = 0; },
+
+  unlocked(i) { return i === 0 || (Store.data.stars[i - 1] || 0) > 0; },
+  nextLevel() {
+    for (let i = 0; i < LEVELS.length; i++) if (!(Store.data.stars[i] > 0)) return i;
+    return LEVELS.length - 1;
+  },
+  starsHtml(n) { return '<span class="stars">' + [1, 2, 3].map(i => '<i class="' + (i <= n ? 'on' : '') + '">★</i>').join('') + '</span>'; },
+
+  buildMenu() {
+    const chain = $('chain'); chain.innerHTML = '';
+    ['grain', 'flour', 'dough', 'baursak'].forEach((t, i) => {
+      if (i) { const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→'; chain.appendChild(a); }
+      chain.appendChild(Render.itemCanvas(t, 44));
+    });
+    const total = Store.data.stars.reduce((a, b) => a + (b || 0), 0);
+    $('bPlay').textContent = total ? 'Продолжить' : 'Играть';
+    $('menuStars').innerHTML = total ? '★ ' + total + ' из ' + LEVELS.length * 3 : '';
+  },
+
+  buildLevels() {
+    $('levelList').innerHTML = LEVELS.map((L, i) => {
+      const open = UI.unlocked(i), st = Store.data.stars[i] || 0, best = Store.data.best[i];
+      return '<button class="lvl' + (open ? '' : ' locked') + '" data-act="level" data-i="' + i + '"' + (open ? '' : ' disabled') + '>' +
+        '<span class="num">' + (i + 1) + '</span><span class="lname">' + L.name +
+        '<small>' + (open ? (best ? 'Рекорд: ' + best + ' очков' : 'Ещё не пройден') : 'Пройди предыдущий уровень') + '</small></span>' +
+        (open ? UI.starsHtml(st) : '<span class="lock">🔒</span>') + '</button>';
+    }).join('');
+  },
+
+  help(then) {
+    Store.data.seenHelp = true; Store.save();
+    UI.modal(
+      '<h2>Как играть</h2>' +
+      '<ol class="help">' +
+      '<li><b>Строй.</b> Выбери «Лента» и проведи линию от источника к машине или складу. Нажатие на ленту поворачивает её.</li>' +
+      '<li><b>Смотри.</b> Завод работает сам: предметы едут, машины перерабатывают, склад платит монетами.</li>' +
+      '<li><b>Улучшай.</b> Найди самую медленную машину, нажми на неё и улучши — или поставь вторую рядом.</li>' +
+      '</ol>' +
+      '<p class="lamps"><span class="lamp ok"></span> работает <span class="lamp wait"></span> ждёт сырьё <span class="lamp block"></span> некуда выгружать</p>' +
+      '<p class="muted">Звёзды дают за <b>поток</b> — сколько штук в минуту приходит на склад. Снос возвращает все монеты, так что пробуй смело.</p>' +
+      '<button class="btn primary" data-act="ok">Понятно</button>',
+      () => { UI.closeModal(); if (then) then(); });
+  },
+
+  settings() {
+    const row = (k, label) => '<button class="toggle' + (Store.data[k] ? ' on' : '') + '" data-act="' + k + '">' + label + '<span>' + (Store.data[k] ? 'вкл' : 'выкл') + '</span></button>';
+    UI.modal('<h2>Настройки</h2>' + row('sound', 'Звуки') + row('music', 'Музыка') +
+      '<button class="btn ghost" data-act="reset">Сбросить прогресс</button>' +
+      '<button class="btn primary" data-act="ok">Готово</button>',
+      act => {
+        if (act === 'sound' || act === 'music') {
+          Store.data[act] = !Store.data[act]; Store.save();
+          Sound.on = Store.data.sound; Sound.musicOn = Store.data.music; Sound.syncMusic();
+          UI.settings();
+        } else if (act === 'reset') {
+          UI.modal('<h2>Сбросить прогресс?</h2><p class="muted">Звёзды и рекорды будут удалены.</p>' +
+            '<button class="btn danger" data-act="yes">Да, сбросить</button><button class="btn ghost" data-act="no">Отмена</button>',
+            a => { if (a === 'yes') { Store.data.stars = []; Store.data.best = []; Store.save(); } UI.settings(); });
+        } else { UI.closeModal(); if (UI.screen === 'game' && UI.g && !UI.g.over) UI.pause(); else UI.show(UI.screen); }
+      });
+  },
+
+  credits() {
+    UI.modal('<h2>Авторы</h2>' +
+      '<p><b>Баурсак-завод</b> — игра для Gambit Hackathon 2026, трек Gambit «AUTOMATE IT!».</p>' +
+      '<p class="muted">Команда: ' + CREDITS.team + '<br>' + CREDITS.members.join(', ') + '</p>' +
+      '<p class="muted">Движок: без движка — HTML5 Canvas и JavaScript.<br>Графика: нарисована кодом, оригинальная.<br>Звук: синтезируется в браузере (WebAudio), оригинальный.<br>Шрифты: системные.<br>ИИ-инструменты: ' + CREDITS.ai + '.</p>' +
+      '<button class="btn primary" data-act="ok">Закрыть</button>', () => UI.closeModal());
+  },
+
+  // ---------- запуск уровня ----------
+  startLevel(i) {
+    const g = UI.g = Sim.create(i), L = g.level;
+    UI.speed = 1; UI.acc = 0; UI.hintIdx = 0; UI.toast = null; UI.infoKey = ''; UI.cache = {};
+    UI.view.sel = null; UI.view.hover = null; UI.view.floats = []; UI.view.tool = 'belt';
+    $('lvlName').textContent = (i + 1) + '. ' + L.name;
+    $('bSpeed').textContent = '×1';
+    // цели
+    const goals = $('goals'); goals.innerHTML = '';
+    g.sinks.forEach((s, k) => {
+      const d = document.createElement('div'); d.className = 'goal';
+      d.appendChild(Render.itemCanvas(s.want, 22));
+      const t = document.createElement('span'); t.id = 'goal' + k; d.appendChild(t);
+      goals.appendChild(d);
+    });
+    // шкала потока
+    const max = L.stars[1] * 1.3;
+    $('m2').style.left = (L.stars[0] / max * 100) + '%';
+    $('m3').style.left = (L.stars[1] / max * 100) + '%';
+    // инструменты
+    const tools = $('tools'); tools.innerHTML = '';
+    L.tools.forEach((t, n) => {
+      const b = document.createElement('button'); b.className = 'tool'; b.dataset.tool = t;
+      b.appendChild(Render.toolCanvas(t, 34));
+      const name = t === 'belt' ? 'Лента' : t === 'erase' ? 'Снести' : MACHINES[t].name;
+      const cost = t === 'belt' ? BELT_COST : t === 'erase' ? '' : MACHINES[t].cost;
+      b.insertAdjacentHTML('beforeend', '<span class="tname">' + name + '</span>' + (cost ? '<span class="tcost"><i class="coin"></i>' + cost + '</span>' : '<span class="tcost">возврат</span>'));
+      b.title = name + ' (клавиша ' + (n + 1) + ')';
+      tools.appendChild(b);
+    });
+    UI.setTool('belt');
+    UI.show('game');
+    UI.hud(); UI.info();
+    UI.modal(
+      '<div class="tag">Уровень ' + (i + 1) + ' из ' + LEVELS.length + '</div><h2>' + L.name + '</h2><p>' + L.intro + '</p>' +
+      '<div class="orders">' + g.sinks.map(s => '<div class="order" data-item="' + s.want + '"><b>' + s.need + '</b> × ' + ITEMS[s.want].name + '</div>').join('') + '</div>' +
+      '<p class="muted">Время: ' + UI.fmt(L.limit) + '<br>★ выполнить заказ · ★★ поток ' + L.stars[0] + '/мин · ★★★ поток ' + L.stars[1] + '/мин</p>' +
+      '<button class="btn primary" data-act="ok">Строить!</button>',
+      () => UI.closeModal());
+    document.querySelectorAll('#modalCard .order').forEach(o => o.prepend(Render.itemCanvas(o.dataset.item, 26)));
+  },
+
+  setTool(t) {
+    UI.view.tool = t;
+    document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+  },
+
+  pause() {
+    Sound.play('click');
+    UI.modal('<h2>Пауза</h2>' +
+      '<button class="btn primary" data-act="resume">Продолжить</button>' +
+      '<button class="btn" data-act="restart">Начать уровень заново</button>' +
+      '<button class="btn" data-act="help">Как играть</button>' +
+      '<button class="btn" data-act="settings">Настройки</button>' +
+      '<button class="btn ghost" data-act="menu">Выйти в меню</button>',
+      act => {
+        if (act === 'resume') UI.closeModal();
+        else if (act === 'restart') { UI.closeModal(); UI.startLevel(UI.g.index); }
+        else if (act === 'help') UI.help(() => UI.pause());
+        else if (act === 'settings') UI.settings();
+        else if (act === 'menu') { UI.closeModal(); UI.g = null; UI.show('menu'); }
+      });
+  },
+
+  result() {
+    const g = UI.g, i = g.index, st = Sim.stars(g), score = Sim.score(g);
+    if (g.won) {
+      const rec = score > (Store.data.best[i] || 0);
+      Store.data.stars[i] = Math.max(Store.data.stars[i] || 0, st);
+      if (rec) Store.data.best[i] = score;
+      Store.save();
+      const last = i === LEVELS.length - 1;
+      const tip = st === 3 ? 'Завод работает на полную мощность!' :
+        'До ' + (st + 1) + ' звёзд нужен поток ' + g.level.stars[st - 1] + '/мин. Улучши самую медленную машину.';
+      UI.modal(
+        '<div class="tag">' + (last ? 'Игра пройдена!' : 'Заказ выполнен') + '</div><h2>' + g.level.name + '</h2>' +
+        '<div class="bigstars">' + UI.starsHtml(st) + '</div>' +
+        '<table class="stats"><tr><td>Лучший поток</td><td>' + g.peak + ' шт/мин</td></tr>' +
+        '<tr><td>Заказ готов за</td><td>' + UI.fmt(g.doneAt) + '</td></tr>' +
+        '<tr><td>Очки</td><td>' + score + (rec ? ' · рекорд!' : '') + '</td></tr></table>' +
+        '<p class="muted">' + tip + '</p>' +
+        (last ? '' : '<button class="btn primary" data-act="next">Следующий уровень</button>') +
+        '<button class="btn' + (last ? ' primary' : '') + '" data-act="restart">' + (st < 3 ? 'Улучшить результат' : 'Сыграть ещё раз') + '</button>' +
+        '<button class="btn ghost" data-act="levels">К уровням</button>',
+        UI.resultAct);
+      Sound.play('win');
+    } else {
+      UI.modal('<div class="tag bad">Время вышло</div><h2>Заказ не выполнен</h2>' +
+        '<p class="muted">Подсказка: сначала построй простую рабочую цепочку, а улучшай уже потом — завод зарабатывает монеты сам.</p>' +
+        '<button class="btn primary" data-act="restart">Попробовать ещё раз</button><button class="btn ghost" data-act="levels">К уровням</button>',
+        UI.resultAct);
+      Sound.play('lose');
+    }
+  },
+  resultAct(act) {
+    const i = UI.g.index;
+    UI.closeModal();
+    if (act === 'next') UI.startLevel(i + 1);
+    else if (act === 'restart') UI.startLevel(i);
+    else { UI.g = null; UI.show('levels'); }
+  },
+
+  fmt(sec) { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); },
+  say(text) { UI.toast = { text, until: UI.view.now + 2.6 }; },
+
+  // ---------- управление на поле ----------
+  cellAt(ev) {
+    const r = $('board').getBoundingClientRect();
+    return { x: Math.floor((ev.clientX - r.left) / r.width * GRID_W), y: Math.floor((ev.clientY - r.top) / r.height * GRID_H) };
+  },
+
+  fail(r) {
+    Sound.play('error');
+    if (r.why === 'coins') { UI.say('Не хватает монет. Подожди — завод заработает ещё.'); $('coins').classList.remove('shake'); void $('coins').offsetWidth; $('coins').classList.add('shake'); }
+    else if (r.why === 'busy') UI.say('Клетка занята.');
+  },
+
+  eraseAt(x, y) {
+    const g = UI.g;
+    if (Sim.erase(g, x, y).ok) {
+      Sound.play('erase');
+      if (UI.view.sel && UI.view.sel.x === x && UI.view.sel.y === y) UI.view.sel = null;
+    }
+  },
+
+  beltAt(x, y, d) {
+    const r = Sim.placeBelt(UI.g, x, y, d);
+    if (r.ok) { if (r.changed) Sound.play('place'); }
+    else if (r.why === 'coins' && !UI.drag.warned) { UI.drag.warned = true; UI.fail(r); }
+    return r.ok;
+  },
+
+  down(ev) {
+    if (!UI.g || UI.g.over || UI.modalOpen) return;
+    Sound.unlock();
+    ev.preventDefault();
+    try { $('board').setPointerCapture(ev.pointerId); } catch (e) { /* не везде поддерживается */ }
+    const p = UI.cellAt(ev), g = UI.g, c = Sim.at(g, p.x, p.y), tool = UI.view.tool;
+    if (c === undefined) return;
+    UI.drag = { x: p.x, y: p.y, moved: false, wasBelt: !!(c && c.k === 'belt'), mode: 'none', warned: false };
+    if (!(c && c.k === 'mach' && UI.view.sel && UI.view.sel.x === p.x && UI.view.sel.y === p.y)) UI.view.sel = null;
+    if (tool === 'erase') { UI.drag.mode = 'erase'; UI.eraseAt(p.x, p.y); return; }
+    if (tool === 'belt') { UI.drag.mode = 'belt'; return; }
+    // инструмент-машина
+    if (!c) {
+      const r = Sim.placeMachine(g, p.x, p.y, tool);
+      if (r.ok) { Sound.play('machine'); UI.view.sel = { x: p.x, y: p.y }; UI.drag.placed = true; }
+      else UI.fail(r);
+    }
+  },
+
+  move(ev) {
+    if (!UI.g) return;
+    const p = UI.cellAt(ev), g = UI.g;
+    UI.view.hover = (ev.pointerType === 'mouse' && Sim.inside(g, p.x, p.y)) ? p : null;
+    const dr = UI.drag;
+    if (!dr || dr.mode === 'none' || g.over) return;
+    p.x = Math.max(0, Math.min(GRID_W - 1, p.x)); p.y = Math.max(0, Math.min(GRID_H - 1, p.y));
+    // идём по клеткам по одной, чтобы быстрый жест не оставлял дыр
+    let guard = 0;
+    while ((dr.x !== p.x || dr.y !== p.y) && guard++ < 40) {
+      const dx = p.x - dr.x, dy = p.y - dr.y;
+      const sx = Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : 0, sy = sx ? 0 : Math.sign(dy);
+      const nx = dr.x + sx, ny = dr.y + sy;
+      dr.moved = true;
+      if (dr.mode === 'erase') UI.eraseAt(nx, ny);
+      else {
+        const d = DIRS.findIndex(v => v[0] === sx && v[1] === sy);
+        const pc = Sim.at(g, dr.x, dr.y);
+        if (!pc || pc.k === 'belt') UI.beltAt(dr.x, dr.y, d);
+        if (!Sim.at(g, nx, ny)) UI.beltAt(nx, ny, d);
+        UI.lastDir = d;
+      }
+      dr.x = nx; dr.y = ny;
+    }
+  },
+
+  up(ev) {
+    const dr = UI.drag; UI.drag = null;
+    if (!dr || !UI.g || UI.g.over) return;
+    if (dr.moved || dr.mode === 'erase') return;
+    const g = UI.g, c = Sim.at(g, dr.x, dr.y);
+    if (c && c.k === 'mach') {
+      if (dr.placed) return;
+      const same = UI.view.sel && UI.view.sel.x === dr.x && UI.view.sel.y === dr.y;
+      UI.view.sel = same ? null : { x: dr.x, y: dr.y };
+      Sound.play('click');
+    } else if (c && c.k === 'src') UI.say('Источник: ' + ITEMS[c.item].name.toLowerCase() + ' каждые ' + c.period + ' с. Отведи от него ленту.');
+    else if (c && c.k === 'sink') UI.say('Склад принимает: ' + ITEMS[c.want].name.toLowerCase() + '. Платит ' + c.reward + ' мон. за штуку.');
+    else if (c && c.k === 'rock') UI.say('Камень. Его придётся обойти.');
+    else if (dr.mode === 'belt') {
+      if (c && c.k === 'belt' && dr.wasBelt) { c.d = (c.d + 1) % 4; UI.lastDir = c.d; Sound.play('rotate'); }
+      else if (!c) { UI.drag = dr; UI.beltAt(dr.x, dr.y, UI.lastDir); UI.drag = null; }
+    } else if (c && c.k === 'belt') UI.say('Здесь лента. Выбери «Лента», чтобы повернуть её, или «Снести».');
+  },
+
+  // ---------- полоса подсказок и действий ----------
+  info() {
+    const g = UI.g, v = UI.view;
+    let key, html;
+    const sel = v.sel && Sim.at(g, v.sel.x, v.sel.y);
+    if (UI.toast && UI.toast.until < v.now) UI.toast = null;
+    if (sel && sel.k === 'mach') {
+      const M = MACHINES[sel.type], cost = Sim.upgradeCost(sel), can = cost !== null && g.coins >= cost;
+      key = 'sel' + v.sel.x + ',' + v.sel.y + ',' + sel.lvl + ',' + can;
+      html = '<div class="itext"><b>' + M.name + (sel.type === 'split' ? '' : ' · ур. ' + sel.lvl) + '</b><br>' +
+        (sel.type === 'split' ? M.desc : M.desc + ' за ' + Sim.duration(sel) + ' с') + '</div>' +
+        (cost !== null ? '<button class="abtn up' + (can ? '' : ' poor') + '" data-act="upgrade">Улучшить<span><i class="coin"></i>' + cost + '</span></button>' :
+          (sel.type === 'split' ? '' : '<span class="maxed">макс.</span>')) +
+        '<button class="abtn del" data-act="remove">Снести</button>';
+    } else if (UI.toast) {
+      key = 'toast' + UI.toast.text; html = '<div class="itext">' + UI.toast.text + '</div>';
+    } else if (g.done) {
+      const st = Sim.stars(g);
+      key = 'done' + st;
+      html = '<div class="itext"><b>Заказ выполнен!</b><br>' + (st < 3 ? 'Улучшай поток ради звёзд или завершай.' : 'Три звезды — отличная работа.') + '</div>' +
+        '<button class="abtn fin" data-act="finish">Завершить ' + '★'.repeat(st) + '</button>';
+    } else {
+      const hints = g.level.hints;
+      while (UI.hintIdx < hints.length - 1 && UI.hintMet(hints[UI.hintIdx].until)) UI.hintIdx++;
+      key = 'hint' + UI.hintIdx;
+      html = '<div class="itext"><span class="bulb">💡</span> ' + hints[UI.hintIdx].text + '</div>';
+    }
+    if (key !== UI.infoKey) { UI.infoKey = key; $('info').innerHTML = html; }
+  },
+  hintMet(cond) {
+    const g = UI.g;
+    if (cond === 'delivered') return g.sinks.some(s => s.got > 0);
+    if (cond === 'tp2') return g.peak >= g.level.stars[0];
+    if (cond === 'tp3') return g.peak >= g.level.stars[1];
+    return false;
+  },
+  infoAct(act) {
+    const g = UI.g, s = UI.view.sel;
+    if (!g || g.over) return;
+    if (act === 'finish') { Sim.finish(g); return; }
+    if (!s) return;
+    if (act === 'upgrade') {
+      const r = Sim.upgrade(g, s.x, s.y);
+      if (r.ok) { Sound.play('upgrade'); UI.view.floats.push({ x: s.x, y: s.y, text: '▲', color: '#fff', age: 0 }); }
+      else UI.fail(r);
+    } else if (act === 'remove') UI.eraseAt(s.x, s.y);
+  },
+
+  // ---------- HUD ----------
+  set(id, val) { if (UI.cache[id] !== val) { UI.cache[id] = val; $(id).textContent = val; } },
+  hud() {
+    const g = UI.g, L = g.level;
+    UI.set('coinsN', g.coins);
+    const left = L.limit - g.time;
+    UI.set('timer', UI.fmt(left));
+    $('timer').classList.toggle('low', left < 30 && !g.done);
+    g.sinks.forEach((s, k) => {
+      UI.set('goal' + k, ITEMS[s.want].name + ' ' + Math.min(s.got, s.need) + '/' + s.need);
+      $('goal' + k).parentNode.classList.toggle('ok', s.got >= s.need);
+    });
+    const tp = Sim.throughput(g), max = L.stars[1] * 1.3;
+    $('meterFill').style.width = Math.min(100, tp / max * 100) + '%';
+    $('meterPeak').style.left = Math.min(100, g.peak / max * 100) + '%';
+    UI.set('meterTxt', 'Поток ' + tp + '/мин');
+    $('m2').classList.toggle('on', g.peak >= L.stars[0]);
+    $('m3').classList.toggle('on', g.peak >= L.stars[1]);
+    document.querySelectorAll('.tool').forEach(b => {
+      const t = b.dataset.tool, cost = t === 'belt' ? BELT_COST : t === 'erase' ? 0 : MACHINES[t].cost;
+      b.classList.toggle('poor', g.coins < cost);
+    });
+  },
+
+  events() {
+    const g = UI.g, v = UI.view;
+    for (const e of g.events) {
+      if (e.e === 'deliver') { Sound.play('deliver'); v.floats.push({ x: e.x, y: e.y, text: '+' + e.reward, color: '#ffd23e', age: 0 }); }
+      else if (e.e === 'bad') { Sound.play('bad'); v.floats.push({ x: e.x, y: e.y, text: '✕', color: '#ff6a5a', age: 0 }); UI.say('На склад приехало не то. Проверь, что нужно в заказе.'); }
+      else if (e.e === 'done') Sound.play('done');
+      else if (e.e === 'win' || e.e === 'lose') { g.events.length = 0; UI.result(); return; }
+    }
+    g.events.length = 0;
+  },
+
+  // ---------- игровой цикл ----------
+  frame(ts) {
+    requestAnimationFrame(UI.frame);
+    const g = UI.g;
+    if (!g || UI.screen !== 'game') { UI.last = 0; return; }
+    let dt = UI.last ? (ts - UI.last) / 1000 : 0;
+    UI.last = ts;
+    if (dt > 0.25) dt = 0.25;                     // вкладка была в фоне — не догоняем рывком
+    const running = !UI.modalOpen && !g.over && !document.hidden;
+    if (running) {
+      UI.view.now += dt;
+      UI.acc += dt * UI.speed;
+      let n = 0;
+      while (UI.acc >= STEP && n++ < 12) { Sim.step(g); UI.acc -= STEP; }
+      if (n >= 12) UI.acc = 0;
+      for (const f of UI.view.floats) f.age += dt;
+      UI.view.floats = UI.view.floats.filter(f => f.age < 0.9);
+    }
+    if (!UI.modalOpen) {
+      UI.events();
+      if (UI.g !== g || UI.modalOpen) return;
+      UI.hud(); UI.info();
+    }
+    Render.draw(UI.ctx, g, UI.view);
+  },
+
+  resize() {
+    const wrap = $('boardwrap'), cv = $('board');
+    const size = Math.floor(Math.min(wrap.clientWidth - 20, wrap.clientHeight)) - 6;   // минус поля и рамка
+    if (size <= 0) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.width = cv.style.height = size + 'px';
+    cv.width = cv.height = Math.round(size * dpr);
+    UI.view.cs = cv.width / GRID_W;
+    if (UI.g) Render.draw(UI.ctx, UI.g, UI.view);
+  },
+
+  init() {
+    Store.load();
+    const cv = $('board');
+    UI.ctx = cv.getContext('2d');
+    cv.addEventListener('pointerdown', UI.down);
+    cv.addEventListener('pointermove', UI.move);
+    cv.addEventListener('pointerup', UI.up);
+    cv.addEventListener('pointercancel', () => { UI.drag = null; });
+    cv.addEventListener('pointerleave', () => { UI.view.hover = null; });
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    window.addEventListener('resize', UI.resize);
+
+    document.addEventListener('click', ev => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      Sound.unlock();
+      if (b.dataset.tool) { UI.setTool(b.dataset.tool); UI.view.sel = null; Sound.play('click'); return; }
+      const act = b.dataset.act;
+      if (!act) return;
+      if (b.closest('#modalCard')) { Sound.play('click'); const f = UI.onModalAct; if (f) f(act); return; }
+      if (b.closest('#info')) { UI.infoAct(act); return; }
+      Sound.play('click');
+      if (act === 'play') { const go = () => UI.startLevel(UI.nextLevel()); if (Store.data.seenHelp) go(); else UI.help(go); }
+      else if (act === 'levels') UI.show('levels');
+      else if (act === 'help') UI.help();
+      else if (act === 'settings') UI.settings();
+      else if (act === 'credits') UI.credits();
+      else if (act === 'back') UI.show('menu');
+      else if (act === 'level') UI.startLevel(+b.dataset.i);
+      else if (act === 'pause') UI.pause();
+      else if (act === 'speed') { UI.speed = UI.speed === 1 ? 2 : UI.speed === 2 ? 4 : 1; $('bSpeed').textContent = '×' + UI.speed; }
+    });
+
+    document.addEventListener('keydown', ev => {
+      if (UI.screen !== 'game' || !UI.g) return;
+      if (ev.key === 'Escape' || ev.key === ' ' || ev.key.toLowerCase() === 'p') {
+        ev.preventDefault();
+        if (UI.modalOpen) { if ($('modalCard').querySelector('[data-act="resume"]')) UI.closeModal(); }
+        else if (!UI.g.over) UI.pause();
+        return;
+      }
+      if (UI.modalOpen) return;
+      const n = parseInt(ev.key, 10), tools = UI.g.level.tools;
+      if (n >= 1 && n <= tools.length) { UI.setTool(tools[n - 1]); UI.view.sel = null; }
+    });
+
+    UI.show('menu');
+    requestAnimationFrame(UI.frame);
+  }
+};
+
+document.addEventListener('DOMContentLoaded', UI.init);
+
+</script>
+</body>
+</html>
